@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.github.netopt</groupId>
+    <artifactId>RSM-SDM-project</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+
+    <developers>
+        <developer>
+            <name>Piotr Lechowicz</name>
+            <email>piotr.lechowicz@pwr.edu.pl</email>
+        </developer>
+    </developers>
+
+    <properties>
+        <junit.version>4.4</junit.version>
+        <log4j.version>1.2.17</log4j.version>
+        <mockito.version>2.0.44-beta</mockito.version>
+        <commons-io.version>2.4</commons-io.version>
+        <guava.version>19.0</guava.version>
+
+
+        <jdk.version>11</jdk.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compilerplugin.version>3.8.0</maven.compilerplugin.version>
+        <surefire.plugin.version>2.19.1</surefire.plugin.version>
+    </properties>
+
+    <dependencies>
+        <!--logging-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.25</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <!--guava for enhanced functionality-->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <!--text utilities-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <!--parsing arguments in cmd line style-->
+        <dependency>
+            <groupId>args4j</groupId>
+            <artifactId>args4j</artifactId>
+            <version>2.33</version>
+        </dependency>
+        <!--gui-->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>12-ea+13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>12-ea+13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>12-ea+13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.fxmisc.richtext</groupId>
+            <artifactId>richtextfx</artifactId>
+            <version>0.9.2</version>
+        </dependency>
+
+        <!--testing-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.javers</groupId>
+            <artifactId>javers-core</artifactId>
+            <version>6.1.0</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compilerplugin.version}</version>
+                <configuration>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>
+                                        com.github.netopt.rsmsdm.App
+                                    </mainClass>
+                                </manifest>
+                            </archive>
+                            <outputDirectory>
+                                ${project.basedir}
+                            </outputDirectory>
+                            <finalName>
+                                ${project.artifactId}-${project.version}
+                            </finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

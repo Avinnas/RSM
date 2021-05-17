@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.github.netopt.rsmsdm.gui.ColoringTextArea?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.Integer?>
+<?import java.net.URL?>
+<?import org.fxmisc.flowless.VirtualizedScrollPane?>
+<?import javafx.scene.text.TextFlow?>
+<BorderPane prefWidth="760" prefHeight="300" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.github.netopt.rsmsdm.gui.MainWindowController">
+
+    <stylesheets>
+        <URL value="@style.css"/>
+    </stylesheets>
+
+    <fx:define>
+        <Integer fx:id="prefButtonWidth" fx:value="100"/>
+    </fx:define>
+
+    <padding>
+        <Insets top="1" bottom="1" left="1" right="1"/>
+    </padding>
+
+    <top>
+        <HBox spacing="10" BorderPane.alignment="TOP_CENTER">
+            <padding>
+                <Insets top="2" bottom="10" left="0" right="0"/>
+            </padding>
+            <VBox maxWidth="Infinity">
+                <VBox maxWidth="Infinity" minWidth="100" prefWidth="560" spacing="10">
+                    <FlowPane hgap="10" vgap="10">
+                        <Label text="Scenario File:"/>
+                        <HBox maxWidth="Infinity">
+                            <TextField fx:id="selectedFileTextField" prefWidth="350" HBox.hgrow="ALWAYS"
+                                       onAction="#onSelectedFileTextFieldEntered"
+                                       promptText="path to scenarios file..."/>
+                        </HBox>
+                        <Button fx:id="selectFileButton" text="_Select file" prefWidth="${prefButtonWidth}"
+                                onAction="#selectFileButtonClicked"/>
+                    </FlowPane>
+                    <Separator></Separator>
+                    <FlowPane hgap="10" vgap="10" maxWidth="Infinity">
+                        <Button text="_Run" fx:id="runButton" prefWidth="${prefButtonWidth}" onAction="#onRunButtonClicked"/>
+                        <Button text="Stop" prefWidth="${prefButtonWidth}" onAction="#onStopButtonClicked"/>
+                        <Button text="_View Result" prefWidth="${prefButtonWidth}"
+                                onAction="#onViewResultButtonClicked"/>
+                    </FlowPane>
+                </VBox>
+            </VBox>
+            <Separator orientation="VERTICAL"></Separator>
+            <Button text="Scenario Creator" maxWidth="Infinity" minWidth="150"
+                    onAction="#onScenarioCreatorButtonClicked"/>
+        </HBox>
+    </top>
+    <center>
+        <!--<ScrollPane fx:id="scroll" vbarPolicy="ALWAYS"  BorderPane.alignment="CENTER">-->
+        <VirtualizedScrollPane BorderPane.alignment="CENTER"  >
+            <content>
+
+            <ColoringTextArea fx:id="console" editable="false" wrapText="true" autoScrollOnDragDesired="true">
+            </ColoringTextArea>
+
+            </content>
+        </VirtualizedScrollPane>
+    </center>
+</BorderPane>
