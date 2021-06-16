@@ -32,3 +32,4 @@ results/**
 !release/*.jar
 
 !data.zip
+release/**
