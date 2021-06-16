@@ -1,5 +1,7 @@
 package com.github.netopt.rsmsdm.algorithm;
 
+import com.github.netopt.rsmsdm.algorithmUtils.AlgorithmHelpers;
+import com.github.netopt.rsmsdm.algorithmUtils.MoveTS;
 import com.github.netopt.rsmsdm.experiment.ExperimentProperties;
 import com.github.netopt.rsmsdm.network.Demand;
 import com.github.netopt.rsmsdm.network.DemandCandidatePath;
@@ -9,8 +11,10 @@ import com.github.netopt.rsmsdm.spectrum.Spectrum;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static java.util.Comparator.reverseOrder;
 
-public class TabuSearch extends Algorithm{
+
+public class TabuSearch extends Algorithm {
     private static final String name = TabuSearch.class.getSimpleName();
 
     @Override
@@ -18,35 +22,38 @@ public class TabuSearch extends Algorithm{
         demands.sort(Comparator.comparing(Demand::getVolume).reversed());
 
         int steps = 1000;
-        int neighbourhoodSize=demands.size();
-        int candidatePathsSearched = 30;
+        int neighbourhoodSize = demands.size()/10;
+        int tabuListSize = demands.size() / 5;
 
         Queue<Integer> tabuList = new LinkedList<>();
         Spectrum emptySpectrum = spectrum.deepCopy();
         List<Demand> bestSolution = new ArrayList<>(demands);
         List<Demand> currentSolution = new ArrayList<>(demands);
-        int bestValue = allocateAndEvaluateSpectrum(spectrum, demands);
+
+        AlgorithmHelpers.locateDemandsOnFirstPath(demands, spectrum);
+        int bestValue = spectrum.getSpectrumCost();
 
         for (int i = 0; i < steps; i++) {
-            int neighbourhoodBestPathImprovement = 0;
-            int neighbourhoodBestPathNumber = 0;
-            int neighbourhoodBestIndex = demands.size()-1;
-            int neighbourhoodBestValue = spectrum.getSpectrumCost();
+            List<MoveTS> moveList = new ArrayList<>();
 
             for (int j = 0; j < neighbourhoodSize; j++) {
+                final int[] indexes = new Random().ints(0, currentSolution.size()).distinct().limit(neighbourhoodSize).toArray();
 
-                Demand currentDemand = demands.get(demands.size()-1-j);
+                int demandIndex = indexes[j];
+                Demand currentDemand = currentSolution.get(demandIndex);
                 int bestPathNumber = 0;
                 int bestPathValue = Integer.MAX_VALUE;
                 Channel channel = currentDemand.getChannel();
-                deallocateChannel(spectrum,currentDemand);
+                deallocateChannel(spectrum, currentDemand);
 
-                for (int k = 0; k < candidatePathsSearched; k++) {
+                for (int k = 0; k < demands.get(0).getNrOfDemandCandidatePaths(); k++) {
 
                     var path = currentDemand.getDemandCandidatePaths().get(k);
-                    int currentValue = evaluateCandidatePath(spectrum, currentDemand, path);
+                    int currentValue = AlgorithmHelpers.evaluateCandidatePath(spectrum, currentDemand, path);
 
-                    if(currentValue < bestPathValue){
+                    if (channel.getDemandCandidatePath().equals(path)) continue;
+
+                    if (currentValue < bestPathValue) {
                         bestPathValue = currentValue;
                         bestPathNumber = k;
                     }
@@ -54,30 +61,37 @@ public class TabuSearch extends Algorithm{
                 int currentSpectrumValue = spectrum.getSpectrumCost();
                 currentDemand.setChannel(channel);
                 spectrum.allocate(channel);
-                if(currentSpectrumValue < spectrum.getSpectrumCost() && bestPathValue< spectrum.getSpectrumCost()
-                && spectrum.getSpectrumCost() < neighbourhoodBestValue){
-                    neighbourhoodBestIndex = demands.size() - 1 - j;
-                    neighbourhoodBestValue = spectrum.getSpectrumCost();
-                    neighbourhoodBestPathNumber = bestPathNumber;
-                    neighbourhoodBestPathImprovement = -bestPathValue + channel.getStartIndex() + channel.getSize();
 
-                } else if(-bestPathValue + channel.getStartIndex() + channel.getSize() > neighbourhoodBestPathImprovement
-                && spectrum.getSpectrumCost()<= neighbourhoodBestValue){
-                    neighbourhoodBestPathImprovement = -bestPathValue + channel.getStartIndex() + channel.getSize();
-                    neighbourhoodBestIndex = demands.size() - 1 - j;
-                    neighbourhoodBestPathNumber = bestPathNumber;
-                }
+                moveList.add(new MoveTS(
+                        Math.max(bestPathValue, currentSpectrumValue),
+                        -bestPathValue + channel.getStartIndex() + channel.getSize(),
+                        demandIndex,
+                        bestPathNumber));
 
             }
 
-            Demand move = currentSolution.get(neighbourhoodBestIndex);
+            moveList.sort(Comparator
+                    .comparing(MoveTS::getValue)
+                    .thenComparing(MoveTS::getPathImprovement, reverseOrder()));
+
+            int moveIndex = 0;
+            while (tabuList.contains(moveList.get(moveIndex).getIndex())) {
+                if (moveList.get(moveIndex).getValue() < bestValue) break;
+                moveIndex++;
+            }
+            if (tabuList.size() == tabuListSize) tabuList.remove();
+            tabuList.add(moveList.get(moveIndex).getIndex());
+
+            MoveTS bestMove = moveList.get(moveIndex);
+            Demand move = currentSolution.get(bestMove.getIndex());
+
             deallocateChannel(spectrum, move);
-            Channel newChannel = ChannelFinder.findLowestOnPath(spectrum, move, move.getDemandCandidatePaths().get(neighbourhoodBestPathNumber));
+            Channel newChannel = ChannelFinder.findLowestOnPath(spectrum, move, move.getDemandCandidatePaths().get(bestMove.getPathNumber()));
             move.setChannel(newChannel);
             spectrum.allocate(newChannel);
 
-            if(neighbourhoodBestValue < bestValue){
-                bestValue = neighbourhoodBestValue;
+            if (bestMove.getValue() < bestValue) {
+                bestValue = bestMove.getValue();
                 bestSolution = new ArrayList<>(currentSolution);
             }
 
@@ -87,32 +101,20 @@ public class TabuSearch extends Algorithm{
 
 
     }
-    protected int evaluateCandidatePath(Spectrum spectrum, Demand demand, DemandCandidatePath demandCandidatePath){
-        Channel channel = ChannelFinder.findLowestOnPath(spectrum, demand, demandCandidatePath);
-        return channel.getStartIndex()+channel.getSize();
-    }
-    protected void deallocateChannel(Spectrum spectrum, Demand demand){
+
+
+
+    protected void deallocateChannel(Spectrum spectrum, Demand demand) {
         spectrum.deallocate(demand.getChannel());
         demand.setChannel(null);
     }
 
-    protected int allocateAndEvaluateSpectrum(Spectrum spectrum, List<Demand> demands){
-        allocateSpectrum(spectrum, demands);
-        return spectrum.getSpectrumCost();
-    }
-    protected int  allocateSpectrumWithPath(Spectrum spectrum, Demand demand, DemandCandidatePath demandCandidatePath){
+
+    protected int allocateSpectrumWithPath(Spectrum spectrum, Demand demand, DemandCandidatePath demandCandidatePath) {
         Channel channel = ChannelFinder.findLowestOnPath(spectrum, demand, demandCandidatePath);
         demand.setChannel(channel);
         spectrum.allocate(channel);
         return spectrum.getSpectrumCost();
-    }
-
-    protected void allocateSpectrum(Spectrum spectrum, List<Demand> demands){
-        for (var demand : demands) {
-            var demandCandidatePath = demand.getShortestDemandCandidatePath();
-
-            allocateSpectrumWithPath(spectrum, demand, demandCandidatePath);
-        }
     }
 
     @Override

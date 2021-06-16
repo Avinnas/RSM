@@ -94,13 +94,11 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.javers</groupId>
             <artifactId>javers-core</artifactId>
             <version>6.1.0</version>
         </dependency>
-
     </dependencies>
 
     <build>
